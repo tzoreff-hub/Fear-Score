@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מדד הפחד הישראלי v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red:#ff2a2a;--orange:#ff6b00;--yellow:#ffd600;--green:#00e676;
+  --purple:#aa00ff;--cyan:#00b0ff;--pink:#ff4081;
+  --bg:#050508;--bg2:#0a0a10;--border:rgba(255,42,42,0.18);
+  --text:#e8e8f0;--muted:#6b6b80;
+  --mono:'Share Tech Mono',monospace;--sans:'Heebo',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:900;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);}
+
+header{padding:14px 24px;border-bottom:1px solid var(–border);display:flex;align-items:center;
+justify-content:space-between;position:sticky;top:0;background:rgba(5,5,8,.97);
+backdrop-filter:blur(14px);z-index:200;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;border:2px solid var(–red);border-radius:50%;display:flex;
+align-items:center;justify-content:center;font-size:15px;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,42,42,.4);}50%{box-shadow:0 0 0 8px rgba(255,42,42,0);}}
+.logo h1{font-size:18px;font-weight:900;}
+.logo h1 span{color:var(–red);}
+.hdr-r{display:flex;align-items:center;gap:12px;font-family:var(–mono);font-size:11px;color:var(–muted);}
+.dot{width:7px;height:7px;background:var(–red);border-radius:50%;display:inline-block;
+animation:blink 1.2s ease-in-out infinite;margin-left:4px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+#ts{color:var(–green);}
+.btn{background:rgba(255,42,42,.1);border:1px solid rgba(255,42,42,.5);color:var(–red);
+padding:4px 11px;border-radius:2px;cursor:pointer;font-family:var(–mono);font-size:11px;}
+.btn:hover{background:rgba(255,42,42,.25);}
+.btn-dbg{border-color:rgba(255,214,0,.4);color:var(–yellow);background:rgba(255,214,0,.06);}
+.btn-dbg:hover{background:rgba(255,214,0,.15);}
+
+/* DEBUG */
+#dbg{position:fixed;bottom:36px;left:8px;z-index:600;background:rgba(0,0,0,.92);
+border:1px solid rgba(255,214,0,.3);border-radius:3px;padding:10px 12px;
+font-family:var(–mono);font-size:10px;max-width:380px;max-height:220px;overflow-y:auto;display:none;}
+#dbg.on{display:block;}
+.dl{padding:1px 0;}.dl.ok{color:var(–green);}.dl.err{color:var(–orange);}.dl.info{color:var(–yellow);}
+
+/* MAIN GRID */
+.grid{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 57px - 34px);}
+
+/* FEAR PANEL */
+.fear-panel{border-left:1px solid var(–border);padding:22px 18px;
+display:flex;flex-direction:column;align-items:center;gap:16px;
+background:linear-gradient(180deg,rgba(255,42,42,.04) 0%,transparent 50%);}
+.lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(–muted);font-family:var(–mono);}
+.gw{position:relative;width:250px;height:144px;}
+.gw svg{width:100%;height:100%;overflow:visible;}
+#needle{transform-origin:125px 125px;transition:transform 1.8s cubic-bezier(.34,1.56,.64,1);}
+.fscore{font-size:68px;font-weight:900;font-family:var(–mono);letter-spacing:-4px;line-height:1;transition:color 1s;}
+.flv{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:2px;transition:all 1s;}
+.comps{width:100%;display:flex;flex-direction:column;gap:7px;}
+.cr{display:flex;align-items:center;gap:6px;}
+.cn{font-size:11px;color:var(–muted);width:108px;flex-shrink:0;text-align:right;}
+.cb{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.cf{height:100%;border-radius:2px;transition:width 1.4s ease;}
+.cv{font-family:var(–mono);font-size:11px;color:var(–text);width:22px;text-align:left;}
+
+/* CARDS */
+.data{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow-y:auto;}
+.card{background:var(–bg2);border:1px solid rgba(255,255,255,.05);border-radius:3px;
+padding:14px;position:relative;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:rgba(255,42,42,.2);}
+.card::before{content:’’;position:absolute;top:0;right:0;width:3px;height:100%;}
+.market::before{background:var(–orange);}
+.currency::before{background:var(–yellow);}
+.trends-c::before{background:var(–purple);}
+.flights-c::before{background:var(–cyan);}
+.news-c::before{background:var(–muted);}
+.polls-c::before{background:var(–pink);}
+.span2{grid-column:1/-1;}
+.ct{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(–muted);
+font-family:var(–mono);margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;}
+
+/* STOCK ROWS */
+.sr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.sr:last-child{border-bottom:none;}
+.sname{font-size:12px;font-weight:700;}.stag{font-size:10px;color:var(–muted);font-family:var(–mono);}
+.sprice{font-family:var(–mono);font-size:14px;font-weight:700;}
+.schg{font-family:var(–mono);font-size:11px;display:block;text-align:left;}
+.pos{color:var(–green);}.neg{color:var(–red);}
+
+/* FX ROWS */
+.fxr{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.fxr:last-child{border-bottom:none;}
+.fxi{font-size:20px;width:28px;}.fxinfo{flex:1;padding:0 8px;}
+.fxname{font-size:11px;color:var(–muted);}
+.fxrate{font-family:var(–mono);font-size:15px;font-weight:700;}
+.fxchg{font-family:var(–mono);font-size:11px;margin-right:auto;}
+
+/* TRENDS */
+.tr{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.tr:last-child{border-bottom:none;}
+.tv{font-family:var(–mono);font-size:11px;color:var(–purple);width:24px;}
+.tbg{flex:1;height:17px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;position:relative;}
+.tf{height:100%;background:linear-gradient(90deg,rgba(170,0,255,.2),rgba(170,0,255,.5));border-radius:2px;transition:width 1.4s;}
+.tk{font-size:11px;position:absolute;right:6px;top:50%;transform:translateY(-50%);white-space:nowrap;color:var(–text);}
+
+/* FLIGHTS */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fs{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px;
+background:rgba(0,176,255,.05);border:1px solid rgba(0,176,255,.1);border-radius:3px;cursor:pointer;}
+.fn{font-family:var(–mono);font-size:24px;font-weight:700;color:var(–cyan);}
+.fl{font-size:10px;color:var(–muted);text-align:center;}
+
+/* NEWS */
+.ng{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;}
+.ni{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;}
+.ni:last-child{border-bottom:none;}
+.nh{font-size:12px;line-height:1.5;transition:color .2s;}
+.ni:hover .nh{color:var(–red);}
+.nt{font-family:var(–mono);font-size:10px;color:var(–muted);}
+
+/* POLLS */
+.bloc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.bloc-box{text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:3px;}
+.bloc-num{font-family:var(–mono);font-size:20px;font-weight:700;}
+.bloc-lbl{font-size:9px;color:var(–muted);letter-spacing:1px;}
+.party-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;}
+.pr{display:flex;align-items:center;gap:6px;padding:4px 5px;border-radius:2px;margin-bottom:1px;}
+.pname{font-size:11px;font-weight:700;width:90px;flex-shrink:0;text-align:right;}
+.pbloc{font-size:9px;font-family:var(–mono);width:30px;flex-shrink:0;text-align:center;}
+.pbg{flex:1;height:14px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;position:relative;}
+.pb{height:100%;border-radius:2px;transition:width 1s;}
+.pn{font-size:11px;font-family:var(–mono);font-weight:700;width:22px;text-align:left;flex-shrink:0;}
+
+/* MISC */
+.src{font-size:10px;color:var(–muted);font-family:var(–mono);margin-top:8px;}
+.src a{color:var(–cyan);text-decoration:none;}
+.src a:hover{text-decoration:underline;}
+.err-msg{font-size:11px;color:var(–orange);font-family:var(–mono);padding:6px 8px;
+background:rgba(255,107,0,.07);border:1px solid rgba(255,107,0,.2);border-radius:2px;margin-bottom:8px;}
+.info-msg{font-size:10px;color:var(–muted);font-family:var(–mono);padding:5px 8px;
+background:rgba(255,255,255,.03);border-radius:2px;margin-bottom:8px;}
+.e{font-size:11px;color:var(–muted);font-family:var(–mono);text-align:center;padding:8px;}
+
+/* TICKER */
+.ticker{position:fixed;bottom:0;left:0;right:0;height:34px;
+background:rgba(255,42,42,.07);border-top:1px solid rgba(255,42,42,.25);
+overflow:hidden;z-index:300;display:flex;align-items:center;}
+.ticker-inner{display:flex;animation:tick 45s linear infinite;white-space:nowrap;}
+.ti{font-family:var(–mono);font-size:12px;color:var(–red);padding:0 24px;}
+.ts-sep{color:var(–muted);padding:0 4px;}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+@media(max-width:860px){
+.grid{grid-template-columns:1fr;}
+.data{grid-template-columns:1fr;}
+.fear-panel{border-left:none;border-bottom:1px solid var(–border);}
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚠</div>
+    <h1>מדד <span>הפחד</span> הישראלי</h1>
+  </div>
+  <div class="hdr-r">
+    <span><span class="dot"></span>LIVE</span>
+    <span>עדכון: <span id="ts">--</span></span>
+    <button class="btn" onclick="refreshAll()">↻ רענן</button>
+    <button class="btn btn-dbg" onclick="document.getElementById('dbg').classList.toggle('on')">🔍 דיבאג</button>
+  </div>
+</header>
+
+<div id="dbg"></div>
+
+<div class="grid">
+
+  <!-- GAUGE -->
+
+  <div class="fear-panel">
+    <div class="lbl">◈ מדד הפחד הישראלי</div>
+    <div class="gw">
+      <svg viewBox="0 0 250 148">
+        <defs>
+          <linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   style="stop-color:#00e676"/>
+            <stop offset="35%"  style="stop-color:#ffd600"/>
+            <stop offset="65%"  style="stop-color:#ff6b00"/>
+            <stop offset="100%" style="stop-color:#ff2a2a"/>
+          </linearGradient>
+        </defs>
+        <path d="M12 125 A113 113 0 0 1 238 125" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="13" stroke-linecap="round"/>
+        <path d="M12 125 A113 113 0 0 1 238 125" fill="none" stroke="url(#gg)" stroke-width="13" stroke-linecap="round"/>
+        <g stroke="rgba(255,255,255,.13)" stroke-width="1">
+          <line x1="12" y1="125" x2="24" y2="125" transform="rotate(-90 125 125)"/>
+          <line x1="12" y1="125" x2="20" y2="125" transform="rotate(-67.5 125 125)"/>
+          <line x1="12" y1="125" x2="24" y2="125" transform="rotate(-45 125 125)"/>
+          <line x1="12" y1="125" x2="20" y2="125" transform="rotate(-22.5 125 125)"/>
+          <line x1="12" y1="125" x2="24" y2="125" transform="rotate(0 125 125)"/>
+          <line x1="12" y1="125" x2="20" y2="125" transform="rotate(22.5 125 125)"/>
+          <line x1="12" y1="125" x2="24" y2="125" transform="rotate(45 125 125)"/>
+          <line x1="12" y1="125" x2="20" y2="125" transform="rotate(67.5 125 125)"/>
+          <line x1="12" y1="125" x2="24" y2="125" transform="rotate(90 125 125)"/>
+        </g>
+        <text x="9"   y="140" font-size="8" fill="#555" font-family="monospace">0</text>
+        <text x="116" y="12"  font-size="8" fill="#555" font-family="monospace" text-anchor="middle">50</text>
+        <text x="228" y="140" font-size="8" fill="#555" font-family="monospace">100</text>
+        <g id="needle">
+          <line x1="125" y1="125" x2="125" y2="20" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+          <circle cx="125" cy="125" r="5" fill="white" opacity=".9"/>
+          <circle cx="125" cy="125" r="3" fill="var(--red)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="fscore" id="fear-score">--</div>
+    <div class="flv" id="fear-lv">מחשב...</div>
+    <div class="comps" style="margin-top:8px">
+      <div class="lbl" style="margin-bottom:3px">מרכיבי המדד</div>
+      <div class="cr"><span class="cn">שוק ביטחוני</span>
+        <div class="cb"><div class="cf" id="bar-market" style="width:0%;background:var(--orange)"></div></div>
+        <span class="cv" id="val-market">--</span></div>
+      <div class="cr"><span class="cn">מטבעות/מתכות</span>
+        <div class="cb"><div class="cf" id="bar-currency" style="width:0%;background:var(--yellow)"></div></div>
+        <span class="cv" id="val-currency">--</span></div>
+      <div class="cr"><span class="cn">חיפושי מיגון</span>
+        <div class="cb"><div class="cf" id="bar-trends" style="width:0%;background:var(--purple)"></div></div>
+        <span class="cv" id="val-trends">--</span></div>
+      <div class="cr"><span class="cn">ביטולי טיסות</span>
+        <div class="cb"><div class="cf" id="bar-flights" style="width:0%;background:var(--cyan)"></div></div>
+        <span class="cv" id="val-flights">--</span></div>
+      <div class="cr"><span class="cn">כותרות ביטחון</span>
+        <div class="cb"><div class="cf" id="bar-news" style="width:0%;background:var(--red)"></div></div>
+        <span class="cv" id="val-news">--</span></div>
+      <div class="cr"><span class="cn">סקרי מפלגות</span>
+        <div class="cb"><div class="cf" id="bar-polls" style="width:0%;background:var(--pink)"></div></div>
+        <span class="cv" id="val-polls">--</span></div>
+    </div>
+  </div>
+
+  <!-- DATA -->
+
+  <div class="data">
+
+```
+<div class="card market">
+  <div class="ct"><span>חברות ביטחוניות</span><span>📈</span></div>
+  <div id="stocks-wrap"><div class="e">טוען...</div></div>
+</div>
+
+<div class="card currency">
+  <div class="ct"><span>מטבעות ומתכות</span><span>🥇</span></div>
+  <div id="fx-wrap"><div class="e">טוען...</div></div>
+</div>
+
+<div class="card trends-c">
+  <div class="ct"><span>חיפושי מיגון – Trends</span><span>🔍</span></div>
+  <div id="trends-wrap"><div class="e">טוען...</div></div>
+</div>
+
+<div class="card flights-c">
+  <div class="ct"><span>טיסות TLV – OpenSky</span><span>✈️</span></div>
+  <div id="flights-wrap"><div class="e">טוען...</div></div>
+</div>
+
+<div class="card polls-c span2">
+  <div class="ct"><span>סקרי מפלגות ישראל – ממוצע אחרון</span><span>🗳️</span></div>
+  <div id="polls-wrap"><div class="e">טוען...</div></div>
+</div>
+
+<div class="card news-c span2">
+  <div class="ct"><span>כותרות ביטחוניות</span><span>📰</span></div>
+  <div class="ng" id="news-wrap"><div class="e" style="grid-column:1/-1">טוען...</div></div>
+</div>
+```
+
+  </div>
+</div>
+
+<div class="ticker">
+  <div class="ticker-inner" id="ticker">
+    <span class="ti">⚠ מדד הפחד הישראלי</span><span class="ts-sep">|</span>
+    <span class="ti">ESLT · LMT · RTX · GC · SI</span><span class="ts-sep">|</span>
+    <span class="ti">USD/ILS · זהב · כסף</span><span class="ts-sep">|</span>
+    <span class="ti">סקרי מפלגות 2026</span><span class="ts-sep">|</span>
+    <span class="ti">OpenSky TLV LLBG</span><span class="ts-sep">|</span>
+    <span class="ti">⚠ מדד הפחד הישראלי</span><span class="ts-sep">|</span>
+    <span class="ti">ESLT · LMT · RTX · GC · SI</span><span class="ts-sep">|</span>
+    <span class="ti">USD/ILS · זהב · כסף</span><span class="ts-sep">|</span>
+    <span class="ti">סקרי מפלגות 2026</span><span class="ts-sep">|</span>
+    <span class="ti">OpenSky TLV LLBG</span><span class="ts-sep">|</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const W = { market:.20, currency:.20, trends:.18, flights:.12, news:.18, polls:.12 };
+const S = { market:50, currency:50, trends:50, flights:50, news:50, polls:50 };
+
+// ═══════════════════════════════════════════
+// DEBUG
+// ═══════════════════════════════════════════
+const LOG = [];
+function log(tag, msg, type='info') {
+  const line = {tag, msg, type, t: new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'})};
+  LOG.push(line);
+  const el = document.getElementById('dbg');
+  el.innerHTML = LOG.slice(-25).reverse().map(l =>
+    `<div class="dl ${l.type}">[${l.t}][${l.tag}] ${l.msg}</div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════
+// FETCH HELPERS
+// NOTE: AbortSignal.timeout() unsupported in
+// older browsers → use AbortController instead
+// ═══════════════════════════════════════════
+
+function tSig(ms) {
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
+
+async function direct(url) {
+  const r = await fetch(url, { signal: tSig(9000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function directText(url) {
+  const r = await fetch(url, { signal: tSig(9000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.text();
+}
+
+async function proxied(url, asText=false) {
+  const r = await fetch(
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    { signal: tSig(14000) }
+  );
+  if (!r.ok) throw new Error(`proxy HTTP ${r.status}`);
+  const raw = await r.json();
+  if (!raw.contents) throw new Error('proxy: empty contents');
+  if (asText) return raw.contents;
+  if (typeof raw.contents === 'object') return raw.contents;
+  return JSON.parse(raw.contents);
+}
+
+// ═══════════════════════════════════════════
+// 1. STOCKS – stooq.com CSV
+// stooq supports CORS – no proxy needed
+// ═══════════════════════════════════════════
+const STOCKS = [
+  { sym:'ESLT.US', name:'אלביט מערכות', tag:'NASDAQ ⭐' },
+  { sym:'LMT.US',  name:'Lockheed Martin', tag:'NYSE' },
+  { sym:'RTX.US',  name:'Raytheon', tag:'NYSE' },
+  { sym:'LDOS.US', name:'Leidos', tag:'NYSE' },
+  { sym:'KTOS.US', name:'Kratos Defense', tag:'NASDAQ' },
+];
+
+async function stooq(sym) {
+  const url = `https://stooq.com/q/d/l/?s=${sym.toLowerCase()}&i=d`;
+  const r = await fetch(url, { signal: tSig(9000) });
+  if (!r.ok) throw new Error(`stooq HTTP ${r.status}`);
+  const csv = await r.text();
+  const lines = csv.trim().split('\n').filter(l => l && !l.startsWith('Date') && !l.includes('No data'));
+  if (lines.length < 2) throw new Error('stooq: not enough rows');
+  const parse = l => { const c = l.split(','); return parseFloat(c[4]); };
+  const price = parse(lines[lines.length-1]);
+  const prev  = parse(lines[lines.length-2]);
+  if (isNaN(price)||isNaN(prev)) throw new Error('stooq: parse error');
+  const change = price - prev;
+  return { price, prev, change, pct: (change/prev)*100 };
+}
+
+async function loadStocks() {
+  const el = document.getElementById('stocks-wrap');
+  const res = await Promise.allSettled(STOCKS.map(s => stooq(s.sym)));
+  let html = ''; let sum = 0; let n = 0;
+  res.forEach((r,i) => {
+    const s = STOCKS[i];
+    if (r.status==='fulfilled') {
+      const d = r.value;
+      const sign = d.change>=0?'+':'';
+      const cls  = d.change>=0?'pos':'neg';
+      html += `<div class="sr">
+        <div><div class="sname">${s.name}</div><div class="stag">${s.tag} · ${s.sym.split('.')[0]}</div></div>
+        <div style="text-align:left">
+          <span class="sprice">$${d.price.toFixed(2)}</span>
+          <span class="schg ${cls}">${sign}${d.change.toFixed(2)} (${sign}${d.pct.toFixed(2)}%)</span>
+        </div></div>`;
+      sum += d.pct; n++;
+      log('STOCKS', `${s.sym.split('.')[0]} = $${d.price.toFixed(2)} ${sign}${d.pct.toFixed(2)}%`, 'ok');
+    } else {
+      html += `<div class="sr"><span class="sname">${s.name}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--orange)">✗ ${r.reason?.message||'err'}</span></div>`;
+      log('STOCKS', `${s.sym}: ${r.reason?.message}`, 'err');
+    }
+  });
+  el.innerHTML = html || '<div class="e">אין נתונים</div>';
+  if (n) {
+    S.market = Math.max(0, Math.min(100, 50 - (sum/n)*9));
+    // update ticker
+    let tk = '';
+    res.forEach((r,i) => {
+      if (r.status!=='fulfilled') return;
+      const d=r.value; const s=STOCKS[i];
+      tk += `<span class="ti">${s.sym.split('.')[0]} $${d.price.toFixed(2)} <span class="${d.pct>=0?'pos':'neg'}">${d.pct>=0?'+':''}${d.pct.toFixed(2)}%</span></span><span class="ts-sep">|</span>`;
+    });
+    if (tk) document.getElementById('ticker').innerHTML = tk+tk;
+  }
+  setBar('market', S.market);
+}
+
+// ═══════════════════════════════════════════
+// 2. CURRENCIES & METALS
+// USD/ILS: frankfurter.app (native CORS ✓)
+// Gold/Silver: stooq GC.F / SI.F
+// ═══════════════════════════════════════════
+async function getRate() {
+  for (const url of [
+    'https://api.frankfurter.app/latest?from=USD&to=ILS',
+    'https://open.er-api.com/v6/latest/USD',
+  ]) {
+    try {
+      const r = await fetch(url, { signal: tSig(8000) });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const rate = d?.rates?.ILS;
+      if (rate > 1) { log('FX', `USD/ILS=${rate.toFixed(3)} via ${url.split('/')[2]}`, 'ok'); return rate; }
+    } catch(e) { log('FX', `direct ${url.split('/')[2]}: ${e.message}`, 'err'); }
+    // proxy fallback
+    try {
+      const d = await proxied(url);
+      const rate = d?.rates?.ILS;
+      if (rate > 1) { log('FX', `USD/ILS=${rate.toFixed(3)} (proxy)`, 'ok'); return rate; }
+    } catch(e) { log('FX', `proxy ${url.split('/')[2]}: ${e.message}`, 'err'); }
+  }
+  return null;
+}
+
+async function loadFX() {
+  const el = document.getElementById('fx-wrap');
+  const [rateR, goldR, silverR] = await Promise.allSettled([
+    getRate(), stooq('gc.f'), stooq('si.f')
+  ]);
+  const usd    = rateR.status==='fulfilled'   ? rateR.value   : null;
+  const gold   = goldR.status==='fulfilled'   ? goldR.value   : null;
+  const silver = silverR.status==='fulfilled' ? silverR.value : null;
+
+  if (gold)   log('FX', `Gold=$${gold.price.toFixed(0)} ${gold.pct>=0?'+':''}${gold.pct.toFixed(2)}%`, 'ok');
+  else        log('FX', `Gold failed: ${goldR.reason?.message}`, 'err');
+  if (silver) log('FX', `Silver=$${silver.price.toFixed(2)} ${silver.pct>=0?'+':''}${silver.pct.toFixed(2)}%`, 'ok');
+  else        log('FX', `Silver failed: ${silverR.reason?.message}`, 'err');
+
+  const parts=[], wts=[];
+  if (usd)    { parts.push(Math.max(0,Math.min(100,(usd-3.4)/(4.0-3.4)*100)));     wts.push(.5); }
+  if (gold)   { parts.push(Math.max(0,Math.min(100,50+gold.pct*8)));                wts.push(.3); }
+  if (silver) { parts.push(Math.max(0,Math.min(100,50+silver.pct*6)));              wts.push(.2); }
+  if (parts.length) S.currency = parts.reduce((a,v,i)=>a+v*wts[i],0)/wts.reduce((a,b)=>a+b,0);
+  setBar('currency', S.currency);
+
+  const mk = (icon,name,val,chg,cls) => `
+    <div class="fxr"><span class="fxi">${icon}</span>
+      <div class="fxinfo"><div class="fxname">${name}</div><div class="fxrate">${val}</div></div>
+      <span class="fxchg ${cls}">${chg}</span></div>`;
+
+  el.innerHTML = [
+    usd    ? mk('💵','דולר / שקל',`${usd.toFixed(3)} ₪`,usd>3.65?'▲ לחץ':'▼ יציב',usd>3.65?'neg':'pos')
+           : `<div class="fxr"><span class="fxi">💵</span><div class="fxinfo"><div class="fxname">דולר/שקל</div><div style="color:var(--orange);font-family:var(--mono);font-size:11px">✗ לא זמין</div></div></div>`,
+    gold   ? mk('🥇','זהב / אונקיה',`$${gold.price.toFixed(0)}`,`${gold.pct>=0?'+':''}${gold.pct.toFixed(2)}%`,gold.pct>=0?'neg':'pos')
+           : `<div class="fxr"><span class="fxi">🥇</span><div class="fxinfo"><div class="fxname">זהב</div><div style="color:var(--orange);font-family:var(--mono);font-size:11px">✗ stooq לא זמין</div></div></div>`,
+    silver ? mk('🥈','כסף / אונקיה',`$${silver.price.toFixed(2)}`,`${silver.pct>=0?'+':''}${silver.pct.toFixed(2)}%`,silver.pct>=0?'neg':'pos')
+           : `<div class="fxr"><span class="fxi">🥈</span><div class="fxinfo"><div class="fxname">כסף</div><div style="color:var(--orange);font-family:var(--mono);font-size:11px">✗ stooq לא זמין</div></div></div>`,
+    `<div class="src">frankfurter.app · open.er-api.com · <a href="https://stooq.com" target="_blank">stooq.com</a></div>`
+  ].join('');
+}
+
+// ═══════════════════════════════════════════
+// 3. TRENDS – manual baseline + RSS detection
+// ═══════════════════════════════════════════
+const TRENDS_DATA = [
+  // ★ Update weekly from trends.google.com/trends/?geo=IL
+  { term:'ממד',          score:72 },
+  { term:'מרחב מוגן',   score:65 },
+  { term:'אזעקה',       score:58 },
+  { term:'פיקוד העורף', score:51 },
+  { term:'מגנים',       score:44 },
+  { term:'חדר ביטחון',  score:37 },
+];
+const TREND_KW = ['ממד','מרחב מוגן','אזעקה','פיגוע','מלחמה','טיל','חמאס','חיזבאללה','פצצה','מיגון','מקלט'];
+
+async function loadTrends() {
+  const el = document.getElementById('trends-wrap');
+  let rssBonus = 0; let hits = [];
+  try {
+    const xml = await proxied('https://trends.google.com/trends/trendingsearches/daily/rss?geo=IL', true);
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    doc.querySelectorAll('item title').forEach(n => {
+      const t = n.textContent.trim();
+      if (TREND_KW.some(k=>t.includes(k))) { rssBonus+=15; hits.push(t); }
+    });
+    rssBonus = Math.min(40, rssBonus);
+    log('TRENDS', `RSS ok – ${hits.length} security hits, bonus=${rssBonus}`, hits.length?'ok':'info');
+  } catch(e) { log('TRENDS', `RSS failed: ${e.message}`, 'err'); }
+
+  const avg = TRENDS_DATA.reduce((s,t)=>s+t.score,0)/TRENDS_DATA.length;
+  S.trends = Math.min(100, avg + rssBonus);
+  setBar('trends', S.trends);
+
+  el.innerHTML = `
+    <div class="info-msg">${hits.length
+      ? `🔴 בטרנד עכשיו: <strong>${hits.slice(0,3).join(', ')}</strong>`
+      : '✓ RSS טופל – אין מונחי ביטחון בטרנד כרגע'}</div>
+    ${TRENDS_DATA.map(t=>`
+      <div class="tr"><span class="tv">${t.score}</span>
+        <div class="tbg"><div class="tf" style="width:${t.score}%"></div>
+        <span class="tk">${t.term}</span></div></div>`).join('')}
+    <div class="src">★ עדכן ידנית: <a href="https://trends.google.com/trends/?geo=IL" target="_blank">Google Trends IL</a></div>`;
+}
+
+// ═══════════════════════════════════════════
+// 4. FLIGHTS – OpenSky via proxy
+// ═══════════════════════════════════════════
+async function loadFlights() {
+  const el = document.getElementById('flights-wrap');
+  try {
+    const data = await proxied(
+      'https://opensky-network.org/api/states/all?lamin=31.6&lomin=34.7&lamax=32.1&lomax=35.1'
+    );
+    const states = data?.states || [];
+    const air    = states.filter(s=>Array.isArray(s)&&s[8]===false).length;
+    const ground = states.filter(s=>Array.isArray(s)&&s[8]===true).length;
+    const total  = states.length;
+    const base   = 45;
+    const fear   = total<8 ? Math.min(100,88+(8-total)*2) : Math.max(5,Math.min(100,50-(total-base)*.6));
+    S.flights = fear; setBar('flights', fear);
+    const rc=total/base;
+    const sc=rc<.4?'var(--red)':rc<.7?'var(--orange)':'var(--green)';
+    const st=rc<.4?'⚠ דל מאוד':rc<.7?'נמוך':'תקין';
+    log('FLIGHTS', `total=${total} air=${air} fear=${fear.toFixed(0)}`, 'ok');
+    el.innerHTML = `<div class="fg">
+      <div class="fs"><span class="fn">${air}</span><span class="fl">מטוסים באוויר</span></div>
+      <div class="fs"><span class="fn" style="color:${fear>60?'var(--red)':'var(--cyan)'}">${Math.round(fear)}</span><span class="fl">מדד חרדה</span></div>
+      <div class="fs"><span class="fn">${ground}</span><span class="fl">בקרקע</span></div>
+      <div class="fs" onclick="window.open('https://www.flightradar24.com/data/airports/tlv','_blank')" style="cursor:pointer">
+        <span class="fn" style="color:${sc};font-size:16px">${st}</span><span class="fl">סטטוס ↗</span></div>
+    </div>
+    <div class="src">OpenSky Network · <a href="https://www.flightradar24.com/data/airports/tlv" target="_blank">FlightRadar24 ↗</a></div>`;
+  } catch(e) {
+    log('FLIGHTS', `failed: ${e.message}`, 'err');
+    S.flights = 50; setBar('flights', 50);
+    el.innerHTML = `
+      <div class="err-msg">⚠ OpenSky: ${e.message}</div>
+      <div class="fg">
+        <div class="fs span2" style="cursor:pointer;grid-column:1/-1"
+          onclick="window.open('https://www.flightradar24.com/data/airports/tlv','_blank')">
+          <span class="fn" style="font-size:14px;color:var(--cyan)">FlightRadar24 ↗</span>
+          <span class="fl">לחץ לנתוני טיסות חיים</span>
+        </div>
+      </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// 5. POLLS – manual data, updated Feb 2026
+// Sources: מידגם, פאנלס, N12, i24
+// ★ Update from: maariv.co.il/elections or
+//   he.wikipedia.org/wiki/סקרי_הבחירות_לכנסת_ה-26
+// ═══════════════════════════════════════════
+const POLLS = {
+  date: 'פברואר 2026',
+  src: 'ממוצע: מידגם, פאנלס, i24, N12',
+  parties: [
+    // ──── קואליציה ────
+    { name:'הליכוד',        seats:25, bloc:'K', color:'#1565C0' },
+    { name:'ש"ס',           seats:11, bloc:'K', color:'#6A1B9A' },
+    { name:'יהדות התורה',   seats: 9, bloc:'K', color:'#4527A0' },
+    { name:'עוצמה יהודית',  seats: 7, bloc:'K', color:'#B71C1C' },
+    { name:'הציונות הדתית', seats: 6, bloc:'K', color:'#880E4F' },
+    { name:'נועם',          seats: 3, bloc:'K', color:'#5D4037' },
+    // ──── אופוזיציה ────
+    { name:'יש עתיד',       seats:19, bloc:'O', color:'#00897B' },
+    { name:'המחנה הממלכתי', seats:13, bloc:'O', color:'#0288D1' },
+    { name:'הדמוקרטים',     seats:11, bloc:'O', color:'#E65100' },
+    { name:'ישראל ביתנו',   seats: 7, bloc:'O', color:'#558B2F' },
+    { name:'חד"ש-תע"ל',    seats: 6, bloc:'O', color:'#546E7A' },
+    { name:'רע"מ',          seats: 3, bloc:'O', color:'#00695C' },
+  ]
+};
+
+function loadPolls() {
+  const el = document.getElementById('polls-wrap');
+  const K = POLLS.parties.filter(p=>p.bloc==='K');
+  const O = POLLS.parties.filter(p=>p.bloc==='O');
+  const ks = K.reduce((a,p)=>a+p.seats,0);
+  const os = O.reduce((a,p)=>a+p.seats,0);
+  const max = Math.max(...POLLS.parties.map(p=>p.seats));
+
+  // Stability proxy: near-tie = instability = more fear
+  const diff = Math.abs(ks-os);
+  S.polls = diff < 5 ? 65 : diff < 15 ? 50 : 35;
+  setBar('polls', S.polls);
+  log('POLLS', `K=${ks} O=${os} diff=${diff} fear=${S.polls}`, 'ok');
+
+  const sorted = [...POLLS.parties].sort((a,b)=>b.seats-a.seats);
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--yellow)">${POLLS.date}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${POLLS.src}</div>
+    </div>
+    <div class="bloc-row">
+      <div class="bloc-box">
+        <div class="bloc-num" style="color:#5c9aff">${ks}</div>
+        <div class="bloc-lbl">קואליציה</div>
+      </div>
+      <div class="bloc-box">
+        <div class="bloc-num" style="color:var(--muted)">120</div>
+        <div class="bloc-lbl">מנדטי כנסת</div>
+      </div>
+      <div class="bloc-box">
+        <div class="bloc-num" style="color:#4db6ac">${os}</div>
+        <div class="bloc-lbl">אופוזיציה</div>
+      </div>
+    </div>
+    <div class="party-grid">
+      ${sorted.map(p => {
+        const pct = (p.seats/max)*100;
+        const bc  = p.bloc==='K'?'rgba(21,101,192,.1)':'rgba(0,137,123,.07)';
+        const blbl= p.bloc==='K'
+          ? `<span style="color:#5c9aff;font-size:9px">קואל.</span>`
+          : `<span style="color:#4db6ac;font-size:9px">אופוז.</span>`;
+        return `<div class="pr" style="background:${bc}">
+          <span class="pname">${p.name}</span>
+          <span class="pbloc">${blbl}</span>
+          <div class="pbg">
+            <div class="pb" style="width:${pct}%;background:${p.color}77;border-right:2px solid ${p.color}"></div>
+          </div>
+          <span class="pn" style="color:${p.color}">${p.seats}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="src" style="margin-top:10px">
+      ★ עדכן מ: 
+      <a href="https://www.maariv.co.il/elections" target="_blank">מעריב</a> · 
+      <a href="https://www.haaretz.co.il/news/elections" target="_blank">הארץ</a> · 
+      <a href="https://he.wikipedia.org/wiki/%D7%A1%D7%A7%D7%A8%D7%99_%D7%94%D7%91%D7%97%D7%99%D7%A8%D7%95%D7%AA_%D7%9C%D7%9B%D7%A0%D7%A1%D7%AA_%D7%94-26" target="_blank">Wikipedia</a>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// 6. NEWS – RSS
+// ═══════════════════════════════════════════
+const NEWS_KW = ['צבאי','ירי','טיל','רקטה','תקיפה','לחימה','חיזבאללה','חמאס',
+  'איראן','מלחמה','כוחות','חטופ','עזה','לבנון','ביטחון','התקפה','נשק',
+  'כיפת ברזל','פצצה','פיגוע','מבצע','אזעקה','פיקוד','חזית','נפל','הרוג'];
+
+async function rss(url) {
+  try {
+    const r = await fetch(
+      `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&count=15`,
+      { signal: tSig(8000) }
+    );
+    const d = await r.json();
+    if (d.status==='ok'&&d.items?.length) { log('NEWS',`rss2json ok: ${url.split('/').at(-1)}`, 'ok'); return d.items; }
+    log('NEWS',`rss2json status=${d.status} for ${url.split('/').at(-1)}`, 'err');
+  } catch(e) { log('NEWS',`rss2json failed ${url.split('/').at(-1)}: ${e.message}`, 'err'); }
+  // fallback: proxy + parse
+  try {
+    const xml = await proxied(url, true);
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const items = Array.from(doc.querySelectorAll('item')).map(n=>({
+      title: n.querySelector('title')?.textContent.replace(/<!\[CDATA\[|\]\]>/g,'').trim()||'',
+      link:  n.querySelector('link')?.textContent||n.querySelector('guid')?.textContent||'#',
+      pubDate: n.querySelector('pubDate')?.textContent||'',
+    }));
+    log('NEWS',`proxy+parse: ${items.length} items from ${url.split('/').at(-1)}`, items.length?'ok':'err');
+    return items;
+  } catch(e) { log('NEWS',`proxy failed ${url.split('/').at(-1)}: ${e.message}`, 'err'); }
+  return [];
+}
+
+async function loadNews() {
+  const el = document.getElementById('news-wrap');
+  const feeds = [
+    'https://www.ynet.co.il/Integration/StoryRss1854.xml',
+    'https://www.ynet.co.il/Integration/StoryRss2.xml',
+    'https://rss.walla.co.il/feed/22',
+    'https://www.mako.co.il/rss/news-military.xml',
+  ];
+  const all = (await Promise.all(feeds.map(rss))).flat();
+  const sec = all
+    .filter(a=>NEWS_KW.some(t=>(a.title+(a.description||'')).includes(t)))
+    .filter((a,i,arr)=>arr.findIndex(x=>x.title===a.title)===i)
+    .slice(0,10);
+  S.news = Math.min(100, sec.length*10+5);
+  setBar('news', S.news);
+  log('NEWS', `${sec.length} security articles (total=${all.length})`, sec.length?'ok':'info');
+  if (!sec.length) {
+    el.innerHTML = `<div class="e" style="grid-column:1/-1">
+      ${all.length===0?'⚠ RSS לא נטען – בדוק חיבור':'✓ RSS נטען, אין כותרות ביטחוניות'}
+      &nbsp;<a href="https://www.ynet.co.il/news/category/184" target="_blank" style="color:var(--red)">ynet ↗</a>
+    </div>`;
+    return;
+  }
+  el.innerHTML = sec.map(a=>{
+    let t='';
+    try{t=a.pubDate?new Date(a.pubDate).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}):'';}catch(e){}
+    return `<div class="ni" onclick="window.open('${a.link}','_blank')">
+      <div class="nh">${a.title}</div><div class="nt">${t}</div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// GAUGE
+// ═══════════════════════════════════════════
+function setBar(id, v) {
+  const val = Math.round(Math.max(0,Math.min(100,v)));
+  const b=document.getElementById(`bar-${id}`);
+  const vl=document.getElementById(`val-${id}`);
+  if(b)  b.style.width  = val+'%';
+  if(vl) vl.textContent = val;
+  calcFear();
+}
+function calcFear() {
+  const score = Math.round(Object.entries(W).reduce((a,[k,w])=>a+S[k]*w,0));
+  document.getElementById('needle').style.transform = `rotate(${-90+(score/100)*180}deg)`;
+  document.getElementById('fear-score').textContent = score;
+  let color,level,bg;
+  if      (score<20){color='#00e676';level='🟢 שקט מוחלט';    bg='rgba(0,230,118,.07)';}
+  else if (score<40){color='#ffd600';level='🟡 מתח נמוך';      bg='rgba(255,214,0,.07)';}
+  else if (score<60){color='#ff6b00';level='🟠 מתח מורגש';    bg='rgba(255,107,0,.07)';}
+  else if (score<75){color='#ff2a2a';level='🔴 חרדה ציבורית';  bg='rgba(255,42,42,.1)';}
+  else if (score<90){color='#ff0000';level='🚨 מצב חירום';     bg='rgba(255,0,0,.14)';}
+  else              {color='#ff0000';level='☢ סכנה קריטית';    bg='rgba(255,0,0,.2)';}
+  document.getElementById('fear-score').style.color=color;
+  const lv=document.getElementById('fear-lv');
+  lv.textContent=level; lv.style.background=bg; lv.style.color=color;
+  lv.style.border=`1px solid ${color}33`;
+}
+
+// ═══════════════════════════════════════════
+// MAIN
+// ═══════════════════════════════════════════
+async function refreshAll() {
+  document.getElementById('ts').textContent='מתרענן...';
+  LOG.length=0;
+  log('SYS','=== refresh started ===','info');
+  loadPolls(); // sync, no network
+  await Promise.allSettled([loadStocks(), loadFX(), loadTrends(), loadFlights(), loadNews()]);
+  calcFear();
+  document.getElementById('ts').textContent =
+    new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  log('SYS',`=== done. Fear=${Math.round(Object.entries(W).reduce((a,[k,w])=>a+S[k]*w,0))} ===`,'info');
+}
+
+refreshAll();
+setInterval(refreshAll, 5*60*1000);
+</script>
+
+</body>
+</html>
